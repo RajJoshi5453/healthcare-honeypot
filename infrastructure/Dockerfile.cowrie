@@ -1,0 +1,56 @@
+# Dockerfile.cowrie
+# Purpose: Build a custom Cowrie SSH honeypot container that simulates a medical IoT device.
+# Base: Official Python 3.10 slim image (Cowrie is a Python application).
+# We install system dependencies, clone Cowrie, and configure the fake filesystem.
+
+FROM python:3.10-slim
+
+# Prevent interactive prompts during apt installs.
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies: git to clone Cowrie, libssl for crypto, libsnappy for logs.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    libssl-dev \
+    libffi-dev \
+    libsnappy-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user for Cowrie. Cowrie should never run as root inside the container.
+RUN useradd -m -s /bin/bash cowrie
+
+# Set working directory.
+WORKDIR /cowrie
+
+# Clone Cowrie stable release. We pin a known tag for reproducibility.
+RUN git clone --depth 1 --branch v2.5.1 https://github.com/cowrie/cowrie.git cowrie-git
+
+WORKDIR /cowrie/cowrie-git
+
+# Install Python dependencies in a virtual environment (Cowrie best practice).
+RUN python -m venv /cowrie/cowrie-env && \
+    /cowrie/cowrie-env/bin/pip install --no-cache-dir --upgrade pip && \
+    /cowrie/cowrie-env/bin/pip install --no-cache-dir -r requirements.txt
+
+# Ensure the log directory and data directories exist and are writable by the cowrie user.
+RUN mkdir -p /cowrie/cowrie-git/var/log/cowrie \
+    /cowrie/cowrie-git/var/lib/cowrie \
+    /cowrie/cowrie-git/share/cowrie \
+    /cowrie/cowrie-git/etc
+
+# Fix ownership so the cowrie user can write logs and download captured files.
+RUN chown -R cowrie:cowrie /cowrie/cowrie-git
+
+# Expose the ports defined in cowrie.cfg (2222 for SSH, 2223 for Telnet).
+# These are mapped to host ports in docker-compose.yml.
+EXPOSE 2222 2223
+
+# Switch to the cowrie user before running.
+USER cowrie
+
+# Use the virtual environment Python to launch Cowrie.
+ENV PATH="/cowrie/cowrie-env/bin:$PATH"
+
+# Default command: start Cowrie in non-daemon mode so Docker can track the process.
+CMD ["python", "bin/cowrie", "start", "--nodaemon"]

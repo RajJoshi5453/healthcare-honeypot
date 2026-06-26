@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Honeypot Dashboard</title>
+    <!-- Chart.js for command frequency bar chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        /* Dark theme to match a security operations center (SOC) aesthetic */
+        :root {
+            --bg-dark: #0f1117;
+            --bg-card: #1a1d26;
+            --text-main: #e0e0e0;
+            --text-muted: #8b8f9a;
+            --accent: #00bcd4;
+            --accent-red: #ff5252;
+            --accent-green: #69f0ae;
+            --border: #2a2d3a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        header h1 { font-size: 1.5rem; letter-spacing: 0.5px; }
+        header p { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.25rem; }
+
+        nav {
+            padding: 0.75rem 2rem;
+            background: var(--bg-dark);
+            border-bottom: 1px solid var(--border);
+        }
+        nav a {
+            color: var(--accent);
+            text-decoration: none;
+            margin-right: 1.5rem;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+        }
+        nav a:hover { opacity: 0.8; text-decoration: underline; }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+            transition: transform 0.15s, border-color 0.15s;
+        }
+        .card:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+        .card h3 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+        .card .value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+        .card .sub { font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem; }
+
+        /* Layout for chart + side lists */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+        @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
+
+        .panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+        .panel h2 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Credential list */
+        .credential-list {
+            list-style: none;
+        }
+        .credential-list li {
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            font-family: monospace;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
+        .credential-list li:last-child { border-bottom: none; }
+        .credential-list .count { color: var(--accent-red); font-weight: bold; }
+
+        /* Recent attackers list */
+        .attacker-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+        .attacker-list li {
+            padding: 0.6rem 0;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .attacker-list li:last-child { border-bottom: none; }
+        .attacker-list .ip { font-family: monospace; color: var(--accent); }
+        .attacker-list .meta { font-size: 0.8rem; color: var(--text-muted); }
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+        .badge-upload { background: rgba(255, 82, 82, 0.15); color: var(--accent-red); }
+        .badge-ok { background: rgba(0, 188, 212, 0.15); color: var(--accent); }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Healthcare IoT Deception Honeypot</h1>
+    <p>Real-time attack monitoring for simulated medical device infrastructure</p>
+</header>
+
+<nav>
+    <a href="/">Dashboard</a>
+    <a href="/map">World Map</a>
+    <a href="/iocs">Top 20 IoCs</a>
+</nav>
+
+<div class="container">
+    <!-- Top stats cards -->
+    <div class="stats-grid">
+        <div class="card">
+            <h3>Total Sessions</h3>
+            <div class="value">{{ stats.total_sessions }}</div>
+            <div class="sub">Attacker interactions</div>
+        </div>
+        <div class="card">
+            <h3>Unique IPs</h3>
+            <div class="value">{{ stats.unique_ips }}</div>
+            <div class="sub">Distinct attacker origins</div>
+        </div>
+        <div class="card">
+            <h3>Commands Executed</h3>
+            <div class="value">{{ stats.total_commands }}</div>
+            <div class="sub">Shell inputs captured</div>
+        </div>
+        <div class="card">
+            <h3>Malware Uploads</h3>
+            <div class="value" style="color: var(--accent-red)">{{ stats.total_uploads }}</div>
+            <div class="sub">File drops detected</div>
+        </div>
+    </div>
+
+    <div class="content-grid">
+        <!-- Chart panel: command frequency -->
+        <div class="panel">
+            <h2>Top 5 Commands</h2>
+            <canvas id="cmdChart" height="180"></canvas>
+        </div>
+
+        <!-- Side panels: credentials + recent attackers -->
+        <div>
+            <div class="panel" style="margin-bottom: 1.5rem;">
+                <h2>Most Targeted Credentials</h2>
+                <ul class="credential-list">
+                {% for cred in top_credentials %}
+                    <li>
+                        <span>{{ cred.username }} / {{ cred.password }}</span>
+                        <span class="count">{{ cred.count }}x</span>
+                    </li>
+                {% else %}
+                    <li style="color: var(--text-muted)">No data yet</li>
+                {% endfor %}
+                </ul>
+            </div>
+
+            <div class="panel">
+                <h2>Top Attackers</h2>
+                <ul class="attacker-list">
+                {% for attacker in recent_attackers %}
+                    <li>
+                        <span>
+                            <span class="ip">{{ attacker.ip }}</span>
+                            {% if attacker.file_uploaded %}
+                                <span class="badge badge-upload">UPLOAD</span>
+                            {% else %}
+                                <span class="badge badge-ok">RECON</span>
+                            {% endif %}
+                        </span>
+                        <span class="meta">{{ attacker.session_count }} sessions</span>
+                    </li>
+                {% else %}
+                    <li style="color: var(--text-muted)">No data yet</li>
+                {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<footer>
+    &copy; 2024 Healthcare IoT Honeypot Project &mdash; For educational cybersecurity internship use only.
+</footer>
+
+<script>
+    // Render Chart.js bar chart of top 5 commands from Flask template data.
+    const ctx = document.getElementById('cmdChart').getContext('2d');
+
+    // Jinja2 passes Python lists/structs as JSON-compatible objects.
+    const topCommands = {{ top_commands | tojson }};
+    const labels = topCommands.map(c => c.command);
+    const counts = topCommands.map(c => c.count);
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Command Frequency',
+                data: counts,
+                backgroundColor: 'rgba(0, 188, 212, 0.6)',
+                borderColor: '#00bcd4',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: 'rgba(255,255,255,0.05)' },
+                    ticks: { color: '#8b8f9a' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#e0e0e0' }
+                }
+            }
+        }
+    });
+</script>
+
+</body>
+</html>

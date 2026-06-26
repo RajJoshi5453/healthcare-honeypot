@@ -1,0 +1,21 @@
+# Cowrie User Database
+# Purpose: Define credentials that Cowrie will ACCEPT to let attackers "succeed".
+# These are deliberately weak, default IoT credentials commonly found on medical devices,
+# routers, and embedded systems. Each line format: username:password:uid:gid:homedir:shell
+# When attackers use these, Cowrie grants them a fake shell session we can log and study.
+
+# Admin / root accounts with trivial passwords
+admin:admin:0:0:/root:/bin/sh
+root:root:0:0:/root:/bin/sh
+root:123456:0:0:/root:/bin/sh
+support:support:0:0:/root:/bin/sh
+
+# Service accounts mimicking medical device manufacturers and HVAC vendors
+service:service:1001:1001:/home/service:/bin/sh
+hvac:hvac123:1002:1002:/home/hvac:/bin/sh
+meduser:meduser:1003:1003:/home/meduser:/bin/sh
+
+# Classic embedded device defaults found in many IoT firmware images
+user:user:1004:1004:/home/user:/bin/sh
+guest:guest:1005:1005:/home/guest:/bin/sh
+pi:raspberry:1006:1006:/home/pi:/bin/sh

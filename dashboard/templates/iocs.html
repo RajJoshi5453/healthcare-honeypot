@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Top 20 IoCs — IoT Honeypot</title>
+    <style>
+        :root {
+            --bg-dark: #0f1117;
+            --bg-card: #1a1d26;
+            --text-main: #e0e0e0;
+            --text-muted: #8b8f9a;
+            --accent: #00bcd4;
+            --accent-red: #ff5252;
+            --border: #2a2d3a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 2rem;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        header h1 { font-size: 1.5rem; }
+        header a { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+        header a:hover { text-decoration: underline; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 0.85rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background: rgba(0, 188, 212, 0.08);
+            color: var(--accent);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: rgba(255,255,255,0.03); }
+        .ip { font-family: monospace; color: var(--accent); font-weight: 600; }
+        .country { color: var(--text-main); }
+        .city { color: var(--text-muted); font-size: 0.85rem; }
+        .count { font-weight: 700; }
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-upload { background: rgba(255, 82, 82, 0.15); color: var(--accent-red); }
+        .badge-recon { background: rgba(0, 188, 212, 0.15); color: var(--accent); }
+        .footer {
+            margin-top: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Top 20 Attacker IoCs</h1>
+    <a href="/">← Back to Dashboard</a>
+</header>
+
+<table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Attacker IP</th>
+            <th>Country</th>
+            <th>City</th>
+            <th>Sessions</th>
+            <th>Commands</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for row in rows %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td class="ip">{{ row.ip }}</td>
+            <td class="country">{{ row.country }}</td>
+            <td class="city">{{ row.city }}</td>
+            <td class="count">{{ row.session_count }}</td>
+            <td class="count">{{ row.command_count }}</td>
+            <td>
+                {% if row.file_uploaded %}
+                    <span class="badge badge-upload">UPLOAD</span>
+                {% else %}
+                    <span class="badge badge-recon">RECON</span>
+                {% endif %}
+            </td>
+        </tr>
+    {% else %}
+        <tr>
+            <td colspan="7" style="text-align:center; color: var(--text-muted); padding: 2rem;">
+                No data yet. Run parser.py and ioc_extractor.py to generate attack_patterns.json.
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<div class="footer">
+    Data sourced from Cowrie honeypot logs enriched with ip-api.com geolocation. Updated after every log-parser run.
+</div>
+
+</body>
+</html>

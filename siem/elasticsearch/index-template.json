@@ -1,0 +1,78 @@
+{
+  "index_patterns": ["cowrie-iocs-*"],
+  "template": {
+    "settings": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "mappings": {
+      "dynamic_templates": [
+        {
+          "strings_as_keywords": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword"
+            }
+          }
+        }
+      ],
+      "properties": {
+        "@timestamp": {
+          "type": "date",
+          "format": "strict_date_optional_time||epoch_millis"
+        },
+        "src_ip": {
+          "type": "ip"
+        },
+        "session": {
+          "type": "keyword"
+        },
+        "eventid": {
+          "type": "keyword"
+        },
+        "input": {
+          "type": "text",
+          "fields": {
+            "keyword": {
+              "type": "keyword",
+              "ignore_above": 2048
+            }
+          }
+        },
+        "command_normalized": {
+          "type": "keyword"
+        },
+        "username": {
+          "type": "keyword"
+        },
+        "password": {
+          "type": "keyword"
+        },
+        "is_login_event": {
+          "type": "boolean"
+        },
+        "login_success": {
+          "type": "boolean"
+        },
+        "file_sha256": {
+          "type": "keyword"
+        },
+        "shasum": {
+          "type": "keyword"
+        },
+        "filename": {
+          "type": "keyword"
+        },
+        "size": {
+          "type": "long"
+        },
+        "tags": {
+          "type": "keyword"
+        },
+        "type": {
+          "type": "keyword"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Attack Origin Map — IoT Honeypot</title>
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <style>
+        :root {
+            --bg-dark: #0f1117;
+            --bg-card: #1a1d26;
+            --text-main: #e0e0e0;
+            --text-muted: #8b8f9a;
+            --accent: #00bcd4;
+            --accent-red: #ff5252;
+            --border: #2a2d3a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+        }
+        header {
+            padding: 1.25rem 1.5rem;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { font-size: 1.25rem; }
+        header a { color: var(--accent); text-decoration: none; font-size: 0.9rem; }
+        header a:hover { text-decoration: underline; }
+        #map { height: calc(100vh - 70px); width: 100%; background: #111; }
+        .legend {
+            background: rgba(26, 29, 38, 0.9);
+            padding: 0.6rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+        .legend .dot {
+            display: inline-block;
+            width: 10px; height: 10px; border-radius: 50%;
+            margin-right: 6px;
+        }
+        .dot-recon { background: var(--accent); }
+        .dot-upload { background: var(--accent-red); }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🌍 Attack Origin Map</h1>
+    <a href="/">← Back to Dashboard</a>
+</header>
+
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+    // Dark-themed map tiles (CartoDB Dark Matter) to match the SOC dashboard.
+    const map = L.map('map').setView([20, 0], 2);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19
+    }).addTo(map);
+
+    // Data injected by Flask Jinja2.
+    const attackers = {{ attackers | tojson }};
+
+    // Custom popup formatter.
+    function popupContent(attacker) {
+        const uploadBadge = attacker.file_uploaded
+            ? '<span style="color:#ff5252;font-weight:bold;">🔴 FILE UPLOAD</span>'
+            : '<span style="color:#00bcd4;font-weight:bold;">🟢 RECON ONLY</span>';
+        return `
+            <div style="font-family:sans-serif;min-width:180px;">
+                <strong style="font-size:1.05rem;">${attacker.ip}</strong><br/>
+                <span style="color:#888">${attacker.city}, ${attacker.country}</span><br/>
+                <hr style="border-color:#333;margin:6px 0;"/>
+                Sessions: <strong>${attacker.session_count}</strong><br/>
+                ${uploadBadge}
+            </div>
+        `;
+    }
+
+    attackers.forEach(a => {
+        const color = a.file_uploaded ? '#ff5252' : '#00bcd4';
+        const radius = Math.max(6, Math.min(20, a.session_count * 3));
+
+        L.circleMarker([a.lat, a.lon], {
+            radius: radius,
+            fillColor: color,
+            color: '#fff',
+            weight: 1,
+            opacity: 0.8,
+            fillOpacity: 0.7
+        }).addTo(map)
+        .bindPopup(popupContent(a));
+    });
+
+    // Add a custom legend.
+    const legend = L.control({position: 'bottomright'});
+    legend.onAdd = function () {
+        const div = L.DomUtil.create('div', 'legend');
+        div.innerHTML = `
+            <strong>Legend</strong><br/>
+            <span class="dot dot-recon"></span>Reconnaissance<br/>
+            <span class="dot dot-upload"></span>File Upload Detected
+        `;
+        return div;
+    };
+    legend.addTo(map);
+</script>
+
+</body>
+</html>

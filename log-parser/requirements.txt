@@ -1,0 +1,15 @@
+# Python dependencies for the log-parser module.
+# Purpose: Parse Cowrie JSON logs, extract IoCs, enrich with geolocation,
+# and produce the attack_patterns.json report used by the Flask dashboard.
+
+# Core environment variable loader (ZERO hardcoded secrets policy)
+python-dotenv==1.0.0
+
+# Flask is used by the dashboard app (separate folder, but listed here for convenience)
+# when students run a single pip install -r requirements.txt from repo root.
+Flask==3.0.0
+Jinja2==3.1.2
+
+# No external geoip library needed; we use urllib + ip-api.com (free, no key).
+# No heavy Elasticsearch client needed for parser (Logstash handles that side).
+# Students may add requests==2.31.0 here if they prefer it over urllib.

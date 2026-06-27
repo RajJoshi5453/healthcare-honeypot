@@ -19,3 +19,6 @@ meduser:meduser:1003:1003:/home/meduser:/bin/sh
 user:user:1004:1004:/home/user:/bin/sh
 guest:guest:1005:1005:/home/guest:/bin/sh
 pi:raspberry:1006:1006:/home/pi:/bin/sh
+admin:admin123
+root:hospital
+medical:medical123

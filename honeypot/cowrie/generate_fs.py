@@ -211,3 +211,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Additional fake medical device files
+MEDICAL_FILES = {
+    "/opt/medical/patient_data/records_2024.db": "SQLITE3_FAKE_DB",
+    "/opt/medical/config/network.conf": "[network]\nip=192.168.10.50\ngateway=192.168.10.1",
+    "/var/log/medical/audit.log": "2024-01-15 09:23:11 INFO Device boot complete",
+    "/home/admin/.bash_history": "cd /opt/medical\nls -la\ncat patient_data/records_2024.db",
+}
